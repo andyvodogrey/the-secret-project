@@ -1,6 +1,5 @@
 # Prerequisites
 *.d
-*.DS*
 
 # Compiled Object files
 *.slo
@@ -40,3 +39,14 @@
 
 # debug information files
 *.dwo
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# PlatformIO build artifacts
+.pio/
+.pioenvs/
+.piolibdeps/
+.pio/libdeps/
+.sconsign.dblite
