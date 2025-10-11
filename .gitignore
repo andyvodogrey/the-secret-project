@@ -50,3 +50,6 @@ Thumbs.db
 .piolibdeps/
 .pio/libdeps/
 .sconsign.dblite
+
+# git flow
+.github/
