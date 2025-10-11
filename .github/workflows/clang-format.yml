@@ -1,0 +1,26 @@
+name: clang-format
+
+on:
+  pull_request:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: |
+          FILES="$(git ls-files '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp')"
+          [ -z "$FILES" ] && exit 0
+          clang-format --version
+          cp -f .clang-format /tmp/.clang-format
+          clang-format -style=file -i $FILES
+          git diff --exit-code || (echo "Run clang-format locally and commit changes." && exit 1)

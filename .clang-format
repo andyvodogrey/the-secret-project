@@ -1,0 +1,59 @@
+# .clang-format — K&R style for C/C++
+BasedOnStyle: LLVM
+
+# General
+ColumnLimit: 100
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  BeforeCatch: false
+  BeforeElse: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+
+# Spacing & alignment
+PointerAlignment: Right         # K&R: "int *p"
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+AlignAfterOpenBracket: Align
+BinPackArguments: false
+BinPackParameters: false
+Cpp11BracedListStyle: true
+NamespaceIndentation: None
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<(Arduino|ESP|driver|freertos)/'
+    Priority: 2
+  - Regex: '^<'
+    Priority: 3
+  - Regex: '^[.]'
+    Priority: 1
+
+# Comments & preprocessor
+ReflowComments: true
+IndentPPDirectives: AfterHash
+
+---
+Language: Cpp
+Standard: c++17
