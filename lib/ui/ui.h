@@ -19,12 +19,20 @@ extern "C" {
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);
 extern lv_obj_t *ui_Screen1;
-extern lv_obj_t *ui_Label1;
-extern lv_obj_t *ui_Arc1;
+extern lv_obj_t *ui_labelMinuts;
+extern lv_obj_t *ui_Label2;
+extern lv_obj_t *ui_Label3;
+extern lv_obj_t *ui_Label4;
+extern lv_obj_t *ui_labelColon;
+extern lv_obj_t *ui_labelSeconds;
+extern lv_obj_t *ui_labelFocus;
 // CUSTOM VARIABLES
 
 // EVENTS
 extern lv_obj_t *ui____initial_actions0;
+
+// FONTS
+LV_FONT_DECLARE(ui_font_Mons110);
 
 // UI INIT
 void ui_init(void);

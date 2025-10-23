@@ -10,14 +10,22 @@ static lv_disp_drv_t disp_drv;
 lv_color_t *buf;
 LGFX tft;
 
-#define BLK_GPIO PIN_LCD_BACKLIGHT
+static hw_timer_t *timer = NULL;
+static const uint16_t timerFreqHz = 10000; // timer clock = 10 kHz
+bool tick = false;
+int32_t seconds = 59;
+int32_t minuts = 30;
+static uint32_t last = 0;
 
 void displayFlush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p);
 void lvglInit();
 
-uint32_t last_tick = xTaskGetTickCount();
+void IRAM_ATTR isrTimer() {
+  tick = true;
+}
 
 void setup() {
+  Serial.begin(9600);
   tft.init();
   tft.fillScreen(TFT_BLACK);
 
@@ -25,11 +33,38 @@ void setup() {
 
   pinMode(BLK_GPIO, OUTPUT);
   digitalWrite(BLK_GPIO, HIGH);
+  timer = timerBegin(timerFreqHz);
+  timerAttachInterrupt(timer, &isrTimer);
+  timerAlarm(timer, timerFreqHz, true, 0);
+  timerStart(timer);
 }
 
 void loop() {
-  lv_timer_handler();
-  delay(5);
+  uint32_t now = millis() - last;
+
+  if (now >= 5) {
+    lv_tick_inc(now);
+    lv_timer_handler();
+    last = now;
+  }
+
+  if (tick) {
+    Serial.print("I'm ticking ");
+    Serial.println(seconds);
+
+    tick = false;
+
+    if (seconds <= 0) {
+      seconds = 59;
+      minuts--;
+      lv_label_set_text_fmt(ui_labelMinuts, "%d", minuts);
+
+    } else {
+      lv_label_set_text_fmt(ui_labelSeconds, "%d", seconds);
+    }
+
+    seconds--;
+  }
 }
 
 void lvglInit() {
