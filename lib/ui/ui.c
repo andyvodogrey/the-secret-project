@@ -5,13 +5,33 @@
 
 #include "ui.h"
 
+#include "esp_log.h"
+#include "pomodoro.h"
 #include "ui_helpers.h"
 
+#define INDX_MAIN_SCREEN 0
+#define INDX_CONFIG_SCREEN 1
 ///////////////////// VARIABLES ////////////////////
+static const uint8_t max_focus_time = 59;
+static const uint8_t min_focus_time = 1;
+int focus_time;
 
-// SCREEN: ui_Screen1
-void ui_Screen1_screen_init(void);
-lv_obj_t *ui_Screen1;
+static const uint8_t max_break_time = 10;
+static const uint8_t min_break_time = 1;
+int break_time;
+
+bool start_focus = false;
+
+lv_indev_t *enc_indev;
+lv_indev_drv_t enc_drv;
+lv_group_t *group_obj[2];
+
+void set_custom_label_text(lv_obj_t *label, int val);
+
+// SCREEN: ui_MainScreen__
+void ui_MainScreen_screen_init(void);
+void ui_event_MainScreen(lv_event_t *e);
+lv_obj_t *ui_MainScreen;
 lv_obj_t *ui_labelMinuts;
 lv_obj_t *ui_Label2;
 lv_obj_t *ui_Label3;
@@ -21,22 +41,196 @@ lv_obj_t *ui_labelSeconds;
 lv_obj_t *ui_labelFocus;
 // CUSTOM VARIABLES
 
+// SCREEN: ui_ConfScreen
+void ui_ConfScreen_screen_init(void);
+void ui_event_ConfScreen(lv_event_t *e);
+void ui_event_labelMinConf(lv_event_t *e);
+void ui_event_labelSessionsConf(lv_event_t *e);
+lv_obj_t *ui_ConfScreen;
+lv_obj_t *ui_Label1;
+lv_obj_t *ui_labelMinConf;
+lv_obj_t *ui_Label5;
+lv_obj_t *ui_Label6;
+lv_obj_t *ui_labelConfBreakTime;
+// CUSTOM VARIABLES
+
 // EVENTS
 lv_obj_t *ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
-// #if LV_COLOR_DEPTH != 16
-//     #error "LV_COLOR_DEPTH should be 16bit to match SquareLine Studio's settings"
-// #endif
-// #if LV_COLOR_16_SWAP !=1
-//     #error "LV_COLOR_16_SWAP should be 1 to match SquareLine Studio's settings"
+#if LV_COLOR_DEPTH != 16
+#  error "LV_COLOR_DEPTH should be 16bit to match SquareLine Studio's settings"
+#endif
+// #if LV_COLOR_16_SWAP != 1
+// #  error "LV_COLOR_16_SWAP should be 1 to match SquareLine Studio's settings"
 // #endif
 
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+int loadValue(const char *key) {
+  nvs_handle_t handle;
+  int32_t val;
+  nvs_open("storage", NVS_READWRITE, &handle);
+
+  esp_err_t err = nvs_get_i32(handle, key, &val);
+  if (err == ESP_ERR_NVS_NOT_FOUND) {
+    // Serial.printf("val not found");
+    val = 0;
+  }
+
+  nvs_close(handle);
+
+  return val;
+}
+
+void saveValue(const char *key, int32_t val) {
+  nvs_handle_t handle;
+  nvs_open("storage", NVS_READWRITE, &handle);
+
+  esp_err_t err = nvs_set_i32(handle, key, val);
+  if (err == ESP_ERR_NVS_NOT_FOUND) {
+    // Serial.printf("Writing conf error");
+  }
+
+  nvs_commit(handle);
+  nvs_close(handle);
+}
+
+void set_custom_label_text(lv_obj_t *label, int val) {
+  if (val >= 10)
+    lv_label_set_text_fmt(label, "%d", val);
+  else
+    lv_label_set_text_fmt(label, "0%d", val);
+}
+
+void ui_event_MainScreen(lv_event_t *e) {
+  lv_event_code_t event_code = lv_event_get_code(e);
+
+  switch (event_code) {
+  case LV_EVENT_LONG_PRESSED:
+    // start_focus = true;
+    if (pomodoro_running()) {
+      pomodoro_stop();
+    } else {
+      pomodoro_start();
+    }
+    break;
+
+  case LV_EVENT_SHORT_CLICKED:
+    lv_indev_t *indev = lv_indev_get_act();
+    if (indev)
+      lv_indev_wait_release(indev);
+    _ui_screen_change(&ui_ConfScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, &ui_ConfScreen_screen_init);
+    lv_indev_set_group(enc_indev, group_obj[INDX_CONFIG_SCREEN]);
+    // lv_group_focus_obj(ui_labelMinConf);
+    lv_group_focus_obj(ui_ConfScreen);
+    break;
+
+  default:
+    break;
+  }
+}
+
+void ui_event_ConfScreen(lv_event_t *e) {
+  lv_event_code_t event_code = lv_event_get_code(e);
+
+  switch (event_code) {
+  case LV_EVENT_CLICKED:
+    break;
+
+  case LV_EVENT_LONG_PRESSED:
+    lv_indev_set_group(enc_indev, group_obj[INDX_MAIN_SCREEN]);
+    lv_group_focus_obj(ui_MainScreen);
+    lv_scr_load(ui_MainScreen);
+    break;
+
+  default:
+    break;
+  }
+}
+
+void ui_event_labelMinConf(lv_event_t *e) {
+  lv_event_code_t event_code = lv_event_get_code(e);
+  switch (event_code) {
+  case LV_EVENT_KEY: {
+    uint32_t key = lv_event_get_key(e);
+    switch (key) {
+    case LV_KEY_RIGHT:
+      if (focus_time <= max_focus_time) {
+        focus_time += 1;
+        set_custom_label_text(ui_labelMinConf, focus_time);
+      }
+
+      break;
+
+    case LV_KEY_LEFT:
+      if (focus_time > min_focus_time) {
+        focus_time -= 1;
+        set_custom_label_text(ui_labelMinConf, focus_time);
+      }
+
+      break;
+
+    case LV_KEY_ENTER:
+      lv_group_focus_obj(ui_labelConfBreakTime);
+      set_custom_label_text(ui_labelMinuts, focus_time);
+      saveValue(KEY_FOCUS_TIME, focus_time);
+
+      break;
+
+    default:
+      break;
+    }
+
+    break;
+  }
+
+  default:
+    break;
+  }
+}
+
+void ui_event_labelSessionsConf(lv_event_t *e) {
+  lv_event_code_t event_code = lv_event_get_code(e);
+  switch (event_code) {
+  case LV_EVENT_KEY: {
+    uint32_t key = lv_event_get_key(e);
+    switch (key) {
+    case LV_KEY_RIGHT:
+      if (break_time < max_break_time) {
+        break_time += 1;
+        lv_label_set_text_fmt(ui_labelConfBreakTime, "%d", break_time);
+      }
+
+      break;
+
+    case LV_KEY_LEFT:
+      if (break_time >= min_break_time) {
+        break_time -= 1;
+        lv_label_set_text_fmt(ui_labelConfBreakTime, "%d", break_time);
+      }
+
+      break;
+    case LV_KEY_ENTER:
+      saveValue(KEY_BREAK_TIME, break_time);
+      lv_group_focus_obj(ui_ConfScreen);
+
+      break;
+
+    default:
+      break;
+    }
+
+    break;
+  }
+
+  default:
+    break;
+  }
+}
 
 ///////////////////// SCREENS ////////////////////
 
@@ -50,7 +244,8 @@ void ui_init(void) {
                                             false,
                                             LV_FONT_DEFAULT);
   lv_disp_set_theme(dispp, theme);
-  ui_Screen1_screen_init();
+  ui_MainScreen_screen_init();
+  ui_ConfScreen_screen_init();
   ui____initial_actions0 = lv_obj_create(NULL);
-  lv_disp_load_scr(ui_Screen1);
+  lv_disp_load_scr(ui_MainScreen);
 }

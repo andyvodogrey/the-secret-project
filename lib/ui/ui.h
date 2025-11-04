@@ -13,12 +13,30 @@ extern "C" {
 #include "components/ui_comp.h"
 #include "components/ui_comp_hook.h"
 #include "lvgl.h"
+#include "nvs.h"
+#include "nvs_flash.h"
 #include "ui_events.h"
 #include "ui_helpers.h"
 
-// SCREEN: ui_Screen1
-void ui_Screen1_screen_init(void);
-extern lv_obj_t *ui_Screen1;
+#define KEY_FOCUS_TIME "focus"
+#define KEY_BREAK_TIME "break"
+
+extern lv_indev_t *enc_indev;
+extern lv_indev_drv_t enc_drv;
+extern lv_group_t *group_obj[2];
+
+extern int focus_time;
+extern int break_time;
+extern bool start_focus;
+
+void saveValue(const char *key, int32_t val);
+int loadValue(const char *key);
+void set_custom_label_text(lv_obj_t *label, int val);
+
+// SCREEN: ui_MainScreen__
+void ui_MainScreen_screen_init(void);
+void ui_event_MainScreen(lv_event_t *e);
+extern lv_obj_t *ui_MainScreen;
 extern lv_obj_t *ui_labelMinuts;
 extern lv_obj_t *ui_Label2;
 extern lv_obj_t *ui_Label3;
@@ -26,6 +44,19 @@ extern lv_obj_t *ui_Label4;
 extern lv_obj_t *ui_labelColon;
 extern lv_obj_t *ui_labelSeconds;
 extern lv_obj_t *ui_labelFocus;
+// CUSTOM VARIABLES
+
+// SCREEN: ui_ConfScreen
+void ui_ConfScreen_screen_init(void);
+void ui_event_ConfScreen(lv_event_t *e);
+void ui_event_labelMinConf(lv_event_t *e);
+void ui_event_labelSessionsConf(lv_event_t *e);
+extern lv_obj_t *ui_ConfScreen;
+extern lv_obj_t *ui_Label1;
+extern lv_obj_t *ui_labelMinConf;
+extern lv_obj_t *ui_Label5;
+extern lv_obj_t *ui_Label6;
+extern lv_obj_t *ui_labelConfBreakTime;
 // CUSTOM VARIABLES
 
 // EVENTS
