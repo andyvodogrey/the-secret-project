@@ -10,9 +10,10 @@
 extern "C" {
 #endif
 
+#include "lvgl.h"
 #include "components/ui_comp.h"
 #include "components/ui_comp_hook.h"
-#include "lvgl.h"
+
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "ui_events.h"

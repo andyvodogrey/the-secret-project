@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "esp_timer.h"
+#include "uart2debug.h"
 
 static esp_timer_handle_t s_timer = nullptr;
 static bool s_running = false;
@@ -25,7 +26,6 @@ static void start_stage(bool focus) {
 }
 
 static void timer_cb(void *) {
-  Serial.printf("Time cb");
   if (!s_running)
     return;
 
@@ -59,7 +59,8 @@ void pomodoro_set_durations_minutes(int focus_min, int break_min) {
 }
 
 void pomodoro_start(void) {
-  Serial.printf("Start called");
+  Serial.printf("Start called\n");
+  debugPrintf("Start called\n");
   pomodoro_init();
   s_running = true;
   s_session = 1;
@@ -67,7 +68,8 @@ void pomodoro_start(void) {
 }
 
 void pomodoro_stop(void) {
-  Serial.printf("Stop called");
+  Serial.printf("Stop called\n");
+  debugPrintf("Stop called\n");
 
   if (!s_timer)
     return;

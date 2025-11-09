@@ -40,7 +40,7 @@ Cpp11BracedListStyle: true
 NamespaceIndentation: None
 
 # Includes
-SortIncludes: true
+SortIncludes: false
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: '^<(Arduino|ESP|driver|freertos)/'
