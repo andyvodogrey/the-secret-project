@@ -6,6 +6,7 @@
 #include "lvgl.h"
 #include "pomodoro.h"
 #include "ui.h"
+#include "uart2debug.h"
 
 static lv_disp_draw_buf_t draw_buf;
 static lv_disp_drv_t disp_drv;
@@ -24,6 +25,8 @@ void setup() {
   while (!Serial && millis() < 5000)
     ;
   delay(2000);
+
+  initUart2debug(115200, UART2_RX, UART2_TX);
 
   tft.init();
   tft.fillScreen(TFT_BLACK);
@@ -72,22 +75,18 @@ void lvglInit() {
   lv_disp_drv_register(&disp_drv);
 
   ui_init();
-  // #######################################################
   pomodoro_init(); // create esp_timer
 
   pomodoro_set_durations_minutes(focus_time > 0 ? focus_time : 25, break_time > 0 ? break_time : 5);
 
   // 1-second LVGL UI updater
   lv_timer_create(lvgl_pomodoro_tick, 1000, NULL);
-  // #######################################################
 
   // Register the encoder driver
   lv_indev_drv_init(&enc_drv);
   enc_drv.type = LV_INDEV_TYPE_ENCODER;
   enc_drv.long_press_time = 500; // in milliseconds
   enc_drv.long_press_repeat_time = 0;
-  // enc_drv.long_press_repeat_time = 0;
-  // enc_drv.read_cb = lvEncoderRead;
   enc_drv.read_cb = encoder_lvgl_read;
   enc_indev = lv_indev_drv_register(&enc_drv);
 
@@ -97,7 +96,6 @@ void lvglInit() {
 
   // Group Main Screen
   lv_group_add_obj(group_obj[0], ui_MainScreen);
-  // lv_group_add_obj(group_obj[0], ui_labelMinuts);
 
   // Group Config Screen
   lv_group_add_obj(group_obj[1], ui_ConfScreen);
@@ -123,45 +121,39 @@ void displayFlush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_
 }
 
 static void lvgl_pomodoro_tick(lv_timer_t *t) {
-  Serial.printf(" tick\n");
+  Serial.printf("Tick\n");
+  debugPrintf("Tick\n");
   (void)t;
-  // 1) Read current Pomodoro state
+  // Read current Pomodoro state
   const bool focus_now = pomodoro_is_focus();
   const int sess_now = pomodoro_get_session();
 
   int min_left, sec_left;
   pomodoro_get_remaining(&min_left, &sec_left);
 
-  // 2) Detect transitions (Focus↔Break OR Session increments)
-  //    Keep previous snapshot across calls
   static bool focus_prev = true;
   static int sess_prev = 1;
   static bool first_run = true;
 
   if (first_run) {
-    // Initialize snapshot on the very first tick (no transition yet)
     focus_prev = focus_now;
     sess_prev = sess_now;
     first_run = false;
   } else if (focus_now != focus_prev || sess_now != sess_prev) {
-    // -> We just crossed a boundary (stage changed or next session)
-    led_feedback_on_transition(focus_now); // flash + short buzz
+    led_feedback_on_transition(focus_now);
     focus_prev = focus_now;
     sess_prev = sess_now;
   }
 
-  // 3) Update your UI labels (minutes, seconds, session, title)
-  //    (Assumes your helper that formats numbers with leading zero if needed)
   if (pomodoro_running()) {
     Serial.printf("min_left %d sec_left %d sess_now %d\n", min_left, sec_left, sess_now);
+    debugPrintf("min_left %d sec_left %d sess_now %d\n", min_left, sec_left, sess_now);
     set_custom_label_text(ui_labelMinuts, min_left);
     set_custom_label_text(ui_labelSeconds, sec_left);
     lv_label_set_text_fmt(ui_Label2, "%d", sess_now);
     lv_label_set_text(ui_labelFocus, focus_now ? "Focus" : "Break");
   }
 
-  // 4) Drive LEDs every second (progress bar + color)
-  //    Decide the full duration of the current stage in minutes
   const int total_minutes =
       focus_now ? (focus_time > 0 ? focus_time : 25) : (break_time > 0 ? break_time : 5);
 

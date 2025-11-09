@@ -111,9 +111,11 @@ void ui_event_MainScreen(lv_event_t *e) {
 
   switch (event_code) {
   case LV_EVENT_LONG_PRESSED:
-    // start_focus = true;
     if (pomodoro_running()) {
       pomodoro_stop();
+      set_custom_label_text(ui_labelMinuts, 0);
+      set_custom_label_text(ui_labelSeconds, 0);
+      lv_label_set_text_fmt(ui_Label2, 0);
     } else {
       pomodoro_start();
     }
@@ -125,7 +127,6 @@ void ui_event_MainScreen(lv_event_t *e) {
       lv_indev_wait_release(indev);
     _ui_screen_change(&ui_ConfScreen, LV_SCR_LOAD_ANIM_FADE_ON, 200, 0, &ui_ConfScreen_screen_init);
     lv_indev_set_group(enc_indev, group_obj[INDX_CONFIG_SCREEN]);
-    // lv_group_focus_obj(ui_labelMinConf);
     lv_group_focus_obj(ui_ConfScreen);
     break;
 
@@ -178,6 +179,7 @@ void ui_event_labelMinConf(lv_event_t *e) {
       lv_group_focus_obj(ui_labelConfBreakTime);
       set_custom_label_text(ui_labelMinuts, focus_time);
       saveValue(KEY_FOCUS_TIME, focus_time);
+      pomodoro_set_durations_minutes(focus_time, 0);
 
       break;
 
@@ -200,7 +202,7 @@ void ui_event_labelSessionsConf(lv_event_t *e) {
     uint32_t key = lv_event_get_key(e);
     switch (key) {
     case LV_KEY_RIGHT:
-      if (break_time < max_break_time) {
+      if (break_time <= max_break_time) {
         break_time += 1;
         lv_label_set_text_fmt(ui_labelConfBreakTime, "%d", break_time);
       }
@@ -208,7 +210,7 @@ void ui_event_labelSessionsConf(lv_event_t *e) {
       break;
 
     case LV_KEY_LEFT:
-      if (break_time >= min_break_time) {
+      if (break_time > min_break_time) {
         break_time -= 1;
         lv_label_set_text_fmt(ui_labelConfBreakTime, "%d", break_time);
       }
@@ -216,6 +218,7 @@ void ui_event_labelSessionsConf(lv_event_t *e) {
       break;
     case LV_KEY_ENTER:
       saveValue(KEY_BREAK_TIME, break_time);
+      pomodoro_set_durations_minutes(0, break_time);
       lv_group_focus_obj(ui_ConfScreen);
 
       break;
