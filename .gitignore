@@ -53,3 +53,9 @@ Thumbs.db
 
 # git flow
 .github/
+
+# ignore vs code files
+.vscode/
+
+# ignore python venv
+.venv/
